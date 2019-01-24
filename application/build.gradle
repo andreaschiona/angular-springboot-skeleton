@@ -1,0 +1,64 @@
+buildscript {
+	ext {
+		springBootVersion = '2.1.2.RELEASE'
+	}
+	repositories {
+		mavenCentral()
+		maven {
+			url 'https://plugins.gradle.org/m2/'
+		}
+	}
+	dependencies {
+		classpath("org.springframework.boot:spring-boot-gradle-plugin:${springBootVersion}")
+		classpath "gradle.plugin.com.google.cloud.tools:jib-gradle-plugin:0.9.11"
+	}
+}
+
+plugins {
+	id 'pl.allegro.tech.build.axion-release' version '1.9.3'
+}
+
+apply plugin: 'java'
+apply plugin: 'org.springframework.boot'
+apply plugin: 'io.spring.dependency-management'
+//plugin docker
+apply plugin: com.google.cloud.tools.jib.gradle.JibPlugin
+
+group = 'it.andreaschiona.web'
+version = scmVersion.version
+sourceCompatibility = '1.8'
+
+repositories {
+	mavenCentral()
+}
+
+dependencies {
+	implementation 'org.springframework.boot:spring-boot-starter-web'
+	testImplementation 'org.springframework.boot:spring-boot-starter-test'
+	
+	// Dipendenza dal front end. per includere il jar con la UI nel jar bootable
+	implementation(project(':angular-ui'))
+}
+
+springBoot {
+	buildInfo()
+}
+
+jib {
+	from {
+		image = 'openjdk:8-jre-alpine'
+	}
+	to {
+		image = "repository/${project.name}"
+		tags = ['latest', project.version]
+		if (System.getenv().GIT_COMMIT) {tags << System.getenv().GIT_COMMIT}//tagga anche con il commitid da env var GIT_COMMIT
+	}
+	container {
+		//entrypoint = ['sh', '-c', 'chmod +x /entrypoint.sh && sync && /entrypoint.sh']
+		ports = ['8080']
+		environment = [
+				SPRING_OUTPUT_ANSI_ENABLED: 'ALWAYS'
+		]
+		useCurrentTimestamp = true
+	}
+}

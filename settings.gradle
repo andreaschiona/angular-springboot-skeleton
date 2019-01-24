@@ -1,0 +1,3 @@
+rootProject.name = 'angular-springboot-skeleton'
+
+include 'application', 'angular-ui'
